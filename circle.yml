@@ -7,8 +7,12 @@ dependencies:
     - tar -xvzf /tmp/stack.tar.gz -C /tmp/stack/
     - sudo mv /tmp/stack/stack-1.2.0-linux-x86_64/stack /usr/bin/stack
   override:
-    - stack build --no-system-ghc --install-ghc --no-terminal
+    - stack setup --no-terminal
+
+compile:
+  override:
+    - stack build --no-terminal
 
 test:
   override:
-    - stack test
+    - stack test --no-terminal
