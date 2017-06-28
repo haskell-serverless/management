@@ -8,6 +8,7 @@ dependencies:
     - sudo mv /tmp/stack/stack-1.2.0-linux-x86_64/stack /usr/bin/stack
   override:
     - stack setup --no-terminal
+    - stack build --no-system-ghc --only-configure --no-terminal 
 
 compile:
   override:
