@@ -22,6 +22,7 @@ library
                      , wai-route
                      , bytestring
                      , http-types
+                     , utf8-string
   default-language:    Haskell2010
 
 executable management-exe
