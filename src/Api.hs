@@ -37,18 +37,19 @@ packagesHandler p rq = case requestMethod rq of
   method | method == methodPut -> putPackage p rq
   _ -> $notImplemented
 
+packageName :: [(B.ByteString, B.ByteString)] -> String
+packageName params = decode $ B.unpack $ fromJust $ lookup "packageName" params
+
 getPackage :: Handler m
-getPackage params rq respond = do
-    let packageName = fromJust $ lookup "packageName" params
-    respond $ responseFile ok200 [] (decode $ B.unpack packageName) Nothing
+getPackage params rq respond =
+  respond $ responseFile ok200 [] (packageName params) Nothing
 
 putPackage :: Handler IO
 putPackage params rq respond = do
-    let packageName = fromJust $ lookup "packageName" params
-    saveFile packageName
+    saveFile $ packageName params
     respond $ responseLBS noContent204 [] LC.empty
   where
-    saveFile packageName = withBinaryFile (decode $ B.unpack packageName) WriteMode go
+    saveFile fileName = withBinaryFile fileName WriteMode go
     go handler = do
       bs <- requestBody rq
       unless (B.null bs) $ do
