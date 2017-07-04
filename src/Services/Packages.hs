@@ -10,8 +10,6 @@ import System.FilePath (takeFileName)
 type ListPackages = IO [String]
 
 listPackages :: IO [String]
-listPackages = do
-  currDir <- getCurrentDirectory
-  allEntries <- listDirectory currDir
-  onlyFiles <- filterM doesFileExist allEntries
-  return $ map takeFileName onlyFiles
+listPackages = fmap (map takeFileName) listOfFiles
+  where
+    listOfFiles = getCurrentDirectory >>= listDirectory >>= filterM doesFileExist
