@@ -5,6 +5,7 @@ module Api.V1.Packages
   ) where
 
 import Api (RoutesMap)
+import Services.Packages (ListPackages)
 import Development.Placeholders
 import Data.Maybe (fromJust)
 import Data.Aeson (encode)
@@ -20,18 +21,18 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Network.Wai.Route
 
-packages :: IO [String] -> RoutesMap IO
+packages :: ListPackages -> RoutesMap IO
 packages serviceListPackages =
   [ ("/", listPackagesHandler serviceListPackages)
   , ("/:packageName", packagesHandler)
   ]
 
-listPackagesHandler :: IO [String] -> Handler IO
+listPackagesHandler :: ListPackages -> Handler IO
 listPackagesHandler serviceListPackages p rq respond = case requestMethod rq of
   method | method == methodGet -> listPackages serviceListPackages p rq respond
   _ -> respond $ responseLBS methodNotAllowed405 [] LC.empty
 
-listPackages :: IO [String] -> Handler IO
+listPackages :: ListPackages -> Handler IO
 listPackages serviceListPackage _ rq respond = do
   onlyFileNames <- serviceListPackage
   respond $ responseLBS ok200 [(hContentType, "application/json")] (encode onlyFileNames)
