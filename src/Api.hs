@@ -7,10 +7,10 @@ module Api
 
 import Development.Placeholders
 import Data.Maybe (fromJust)
-import System.IO (withFile, IOMode(WriteMode))
+import System.IO (withBinaryFile, IOMode(WriteMode))
 import Codec.Binary.UTF8.String (decode)
 import Control.Monad (unless)
-import Network.Wai (Application, requestMethod, responseLBS, requestBody)
+import Network.Wai (Application, requestMethod, responseLBS, requestBody, responseFile)
 import Network.HTTP.Types.Method (methodGet, methodPost, methodPut)
 import Network.HTTP.Types.Status (ok200, noContent204)
 import qualified Data.ByteString as B
@@ -38,7 +38,9 @@ packagesHandler p rq = case requestMethod rq of
   _ -> $notImplemented
 
 getPackage :: Handler m
-getPackage p rq respond = respond $ responseLBS ok200 [] (LC.pack (show p))
+getPackage params rq respond = do
+    let packageName = fromJust $ lookup "packageName" params
+    respond $ responseFile ok200 [] (decode $ B.unpack packageName) Nothing
 
 putPackage :: Handler IO
 putPackage params rq respond = do
@@ -46,7 +48,7 @@ putPackage params rq respond = do
     saveFile packageName
     respond $ responseLBS noContent204 [] LC.empty
   where
-    saveFile packageName = withFile (decode $ B.unpack packageName) WriteMode go
+    saveFile packageName = withBinaryFile (decode $ B.unpack packageName) WriteMode go
     go handler = do
       bs <- requestBody rq
       unless (B.null bs) $ do
