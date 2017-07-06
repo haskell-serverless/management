@@ -5,6 +5,7 @@ module Api
     ( api
     , RoutesMap
     , prependRoute
+    , methodNotAllowedResponse
     ) where
 
 import Development.Placeholders
@@ -15,7 +16,7 @@ import System.Directory (listDirectory, getCurrentDirectory, doesFileExist)
 import System.FilePath (takeFileName)
 import Codec.Binary.UTF8.String (decode)
 import Control.Monad (unless, filterM)
-import Network.Wai (Application, requestMethod, responseLBS, requestBody, responseFile)
+import Network.Wai (Application, requestMethod, responseLBS, requestBody, responseFile, Response)
 import Network.HTTP.Types.Method (methodGet, methodPost, methodPut)
 import Network.HTTP.Types.Header (hContentType)
 import Network.HTTP.Types.Status (ok200, noContent204, methodNotAllowed405)
@@ -31,3 +32,6 @@ api v1Routes = route $ prependRoute "/v1" v1Routes
 
 prependRoute :: B.ByteString -> RoutesMap m -> RoutesMap m
 prependRoute prefix = map (\i -> ( B.concat [prefix, fst i], snd i))
+
+methodNotAllowedResponse :: Response
+methodNotAllowedResponse = responseLBS methodNotAllowed405 [] LC.empty

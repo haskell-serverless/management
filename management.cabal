@@ -29,6 +29,8 @@ library
                      , directory
                      , filepath
                      , aeson
+                     , io-streams
+                     , binary
   default-language:    Haskell2010
 
 executable management-exe
