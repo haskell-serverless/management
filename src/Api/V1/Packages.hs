@@ -5,12 +5,13 @@ module Api.V1.Packages
   ) where
 
 import Api (RoutesMap, methodNotAllowedResponse)
-import Services.Packages (ListPackages, ReadPackage)
+import Services.Packages (ListPackages, ReadPackage, SavePackage)
 import Development.Placeholders
 import Data.Maybe (fromJust)
 import Data.Aeson (encode)
 import Data.Binary.Builder (fromByteString)
 import System.IO (withBinaryFile, IOMode(WriteMode))
+import System.IO.Streams (makeInputStream)
 import qualified System.IO.Streams as S (read)
 import qualified Codec.Binary.UTF8.String as UTF8 (decode, encode)
 import Control.Monad (unless)
@@ -23,10 +24,10 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Network.Wai.Route
 
-packages :: ListPackages -> ReadPackage ResponseReceived -> RoutesMap IO
-packages serviceListPackages serviceReadPackage=
+packages :: ListPackages -> ReadPackage ResponseReceived -> SavePackage -> RoutesMap IO
+packages serviceListPackages serviceReadPackage serviceSavePackage =
   [ ("/", listPackagesHandler serviceListPackages)
-  , ("/:packageName", packagesHandler serviceReadPackage)
+  , ("/:packageName", packagesHandler serviceReadPackage serviceSavePackage)
   ]
 
 listPackagesHandler :: ListPackages -> Handler IO
@@ -41,10 +42,10 @@ getPackages serviceListPackage _ rq respond =
     packageListAsJson <- fmap encode serviceListPackage
     respond $ responseLBS ok200 headers packageListAsJson
 
-packagesHandler :: ReadPackage ResponseReceived -> Handler IO
-packagesHandler serviceReadPackage p rq respond = case requestMethod rq of
+packagesHandler :: ReadPackage ResponseReceived -> SavePackage -> Handler IO
+packagesHandler serviceReadPackage serviceSavePacakge p rq respond = case requestMethod rq of
   method | method == methodGet -> getPackage serviceReadPackage p rq respond
-  method | method == methodPut -> putPackage p rq respond
+  method | method == methodPut -> putPackage serviceSavePacakge p rq respond
   _ -> respond methodNotAllowedResponse
 
 packageName :: [(B.ByteString, B.ByteString)] -> String
@@ -67,14 +68,16 @@ getPackage serviceReadPackage params rq respond =
               go write flush
             Nothing -> flush
 
-putPackage :: Handler IO
-putPackage params rq respond = do
+putPackage :: SavePackage -> Handler IO
+putPackage serviceSavePackage params rq respond = do
     saveFile $ packageName params
     respond $ responseLBS noContent204 [] LC.empty
   where
-    saveFile fileName = withBinaryFile fileName WriteMode go
-    go handler = do
+    saveFile fileName = do
+      inStream <- makeInputStream readChunk
+      serviceSavePackage fileName inStream
+    readChunk = do
       bs <- requestBody rq
-      unless (B.null bs) $ do
-        B.hPut handler bs
-        go handler
+      if B.null bs
+        then return Nothing
+        else return (Just bs)
